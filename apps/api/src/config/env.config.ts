@@ -37,10 +37,8 @@ DATABASE_URL: optional('DATABASE_URL', ''),
   SQUAD_BENEFICIARY_ACCOUNT: optional('SQUAD_BENEFICIARY_ACCOUNT', '0123456789'),
 
   // GEMINI
-  // GEMINI_API_KEY: required('GEMINI_API_KEY'),
-  // GEMINI_API_KEY: required('GEMINI_API_KEY'),
-  // GEMINI_MODEL: optional('GEMINI_MODEL', 'gemini-pro'),
-  // GEMINI_MAX_TOKENS: parseInt(optional('GEMINI_MAX_TOKENS', '1000'), 10),
+GEMINI_API_KEY: required('GEMINI_API_KEY'),
+GEMINI_MODEL: optional("GEMINI_MODEL", "gemini-3.1-flash-lite"),
 
   // Cloudinary
   CLOUDINARY_CLOUD_NAME: optional('CLOUDINARY_CLOUD_NAME', ''),
