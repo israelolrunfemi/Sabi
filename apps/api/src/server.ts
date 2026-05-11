@@ -2,13 +2,13 @@ import app from './app';
 import { connectDB, sequelize } from './config/database.config';
 import { env } from './config/env.config';
 import { logger } from './config/logger.config';
-import './models/index';                    // ← this MUST be here
+import './models/index';                    
 
 const start = async (): Promise<void> => {
   try {
     await connectDB();
 
-    await sequelize.sync({ alter: true });  // ← this MUST be here
+    await sequelize.sync({ alter: true });  
     logger.info('Database synced');
 
     const server = app.listen(env.PORT, () => {
