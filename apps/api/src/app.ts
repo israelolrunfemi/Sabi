@@ -9,7 +9,7 @@ import { AppError } from './utils/app.error';
 import healthRoutes from './routes/health.routes';
 // Add your routes here as you build them:
 // import userRoutes from './routes/user.routes';
-// import authRoutes from './routes/auth.routes';
+import authRoutes from './routes/auth.routes';
 // import matchRoutes from './routes/match.routes';
 // import paymentRoutes from './routes/payment.routes';
 
@@ -33,7 +33,7 @@ if (env.isDev) {
 const BASE = `/api/${env.API_VERSION}`;
 
 app.use(`${BASE}/health`, healthRoutes);
-// app.use(`${BASE}/auth`, authRoutes);
+app.use(`${BASE}/auth`, authRoutes);
 // app.use(`${BASE}/users`, userRoutes);
 // app.use(`${BASE}/matches`, matchRoutes);
 // app.use(`${BASE}/payments`, paymentRoutes);
