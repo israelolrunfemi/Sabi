@@ -3,6 +3,9 @@ import { User } from '../models/index';
 import { AppError } from '../utils/app.error';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt.util';
 import type { RegisterInput, LoginInput } from '../validators/auth.validator';
+import { squadService } from './squad.service';
+import { logger } from '../config/logger.config';
+
 
 export const authService = {
   async register(input: RegisterInput) {
@@ -32,6 +35,13 @@ export const authService = {
       password: hashedPassword,
       userType: input.userType,
     });
+    squadService.createVirtualAccount({
+      id: user.id,
+     fullName: user.fullName,
+      email: user.email,
+     phone: user.phone,
+}).catch((err) => logger.error('Squad account creation failed', { error: err.message }));
+
 
     // 4. Generate tokens
     const payload = {
