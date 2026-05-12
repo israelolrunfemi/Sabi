@@ -1,6 +1,7 @@
 import { SquadAccount, Transaction, User } from '../models/index';
 import { logger } from '../config/logger.config';
 import { AppError } from '../utils/app.error';
+import { trustScoreService } from './trust-score.service';
 
 interface SquadWebhookPayload {
   transaction_reference: string;
@@ -72,12 +73,15 @@ export const webhookService = {
       await account.update({ balance: newBalance });
     }
 
-    logger.info('Transaction saved - trust score update pending', {
+    const trustScore = await trustScoreService.recalculateAndSave(user.id);
+
+    logger.info('Transaction saved and trust score recalculated', {
       userId: user.id,
       amount,
       reference: transaction_reference,
+      trustScore: trustScore.total,
     });
 
-    return { success: true, userId: user.id };
+    return { success: true, userId: user.id, trustScore: trustScore.total };
   },
 };

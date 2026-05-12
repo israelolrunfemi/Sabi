@@ -2,11 +2,20 @@ import PDFDocument from 'pdfkit';
 
 interface TrustScoreBreakdown {
   total: number;
+  rawTotal?: number;
   transactionScore: number;
   ratingScore: number;
   tenureScore: number;
   vouchingScore: number;
   profileScore: number;
+  maxScores?: {
+    transactionScore: number;
+    ratingScore: number;
+    tenureScore: number;
+    vouchingScore: number;
+    profileScore: number;
+    total: number;
+  };
 }
 
 interface TransactionSummary {
@@ -100,18 +109,27 @@ export const generateFinancialReportPDF = async (data: ExportData): Promise<Buff
     doc.fillColor(green).fontSize(34).font('Helvetica-Bold').text(String(data.trustScore.total), 80, 373);
     doc.fillColor(gray).fontSize(9).font('Helvetica').text('Overall score / 100', 78, 410);
 
-    const scoreLine = (label: string, value: number, y: number) => {
+    const scoreLine = (label: string, value: number, max: number, y: number) => {
       doc.fillColor(gray).fontSize(9).font('Helvetica').text(label, 240, y);
-      doc.fillColor(black).font('Helvetica-Bold').text(`${value}/100`, 460, y);
+      doc.fillColor(black).font('Helvetica-Bold').text(`${value}/${max}`, 460, y);
       doc.rect(240, y + 14, 250, 6).fill('#E2E8F0');
-      doc.rect(240, y + 14, Math.max(0, Math.min(value, 100)) * 2.5, 6).fill(accent);
+      doc.rect(240, y + 14, Math.max(0, Math.min(value / max, 1)) * 250, 6).fill(accent);
     };
 
-    scoreLine('Transaction history', data.trustScore.transactionScore, 355);
-    scoreLine('Customer ratings', data.trustScore.ratingScore, 385);
-    scoreLine('Platform tenure', data.trustScore.tenureScore, 415);
-    scoreLine('Community vouching', data.trustScore.vouchingScore, 445);
-    scoreLine('Profile completeness', data.trustScore.profileScore, 475);
+    const maxScores = data.trustScore.maxScores ?? {
+      transactionScore: 35,
+      ratingScore: 25,
+      tenureScore: 20,
+      vouchingScore: 15,
+      profileScore: 5,
+      total: 100,
+    };
+
+    scoreLine('Transaction history', data.trustScore.transactionScore, maxScores.transactionScore, 355);
+    scoreLine('Customer ratings', data.trustScore.ratingScore, maxScores.ratingScore, 385);
+    scoreLine('Platform tenure', data.trustScore.tenureScore, maxScores.tenureScore, 415);
+    scoreLine('Community vouching', data.trustScore.vouchingScore, maxScores.vouchingScore, 445);
+    scoreLine('Profile and photo', data.trustScore.profileScore, maxScores.profileScore, 475);
 
     doc.fillColor(black).fontSize(14).font('Helvetica-Bold').text('Transaction Summary', 50, 530);
     doc.moveTo(50, 548).lineTo(545, 548).stroke(accent);

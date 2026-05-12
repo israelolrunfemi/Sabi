@@ -18,6 +18,7 @@ import buyerRequestRoutes from './routes/buyer-request.routes';
 import exportRoutes from './routes/export.routes';
 import gigRoutes from './routes/gig.routes';
 import webhookRoutes from './routes/webhook.routes';
+import trustScoreRoutes from './routes/trust-score.routes';
 
 const app: Application = express();
 
@@ -48,6 +49,8 @@ app.use(`${BASE}/export`, exportRoutes);
 app.use(`${BASE}/buyer-requests`, buyerRequestRoutes);
 app.use(`${BASE}/gigs`, gigRoutes);
 app.use(`${BASE}/webhooks`, webhookRoutes);
+app.use(`${BASE}/trust-score`, trustScoreRoutes);
+app.use(`${BASE}/trust`, trustScoreRoutes);
 
 // ── 404 Handler ─────────────────────────────────────────────────────────────
 app.use((req: Request, _res: Response, next: NextFunction) => {
