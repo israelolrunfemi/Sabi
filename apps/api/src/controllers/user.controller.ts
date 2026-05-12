@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { userService } from '../services/user.service';
+import { financialReportService } from '../services/financial-report.service';
 
 
 export const userController = {
@@ -57,6 +58,18 @@ export const userController = {
         message: 'Economic profile updated',
         data: profile,
       });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // GET /api/v1/users/me/financial-report.pdf
+  async exportFinancialReport(req: Request, res: Response, next: NextFunction) {
+    try {
+      const report = await financialReportService.generateForUser(req.user!.userId);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${report.filename}"`);
+      res.status(200).send(report.buffer);
     } catch (err) {
       next(err);
     }

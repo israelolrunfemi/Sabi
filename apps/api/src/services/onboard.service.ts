@@ -4,6 +4,7 @@ import { env } from '../config/env.config';
 import { EconomicProfile } from '../models/index';
 import { AppError } from '../utils/app.error';
 import { logger } from '../config/logger.config';
+import { z } from 'zod';
 
 type Message = {
   role: 'user' | 'assistant' | 'system';
@@ -15,6 +16,17 @@ type GeminiHistoryItem = {
   parts: { text: string }[];
 };
 
+const extractedProfileSchema = z.object({
+  tradeCategory: z.string().min(1),
+  skills: z.array(z.string().min(1)).min(1),
+  location: z.string().min(1),
+  language: z.string().min(1),
+  yearsExperience: z.coerce.number().int().min(0),
+  description: z.string().min(1),
+});
+
+type ExtractedProfile = z.infer<typeof extractedProfileSchema>;
+
 const toGeminiHistory = (history: Message[] = []): GeminiHistoryItem[] => {
   return history
     .filter((item) => item.role !== 'system' && item.content?.trim())
@@ -22,6 +34,59 @@ const toGeminiHistory = (history: Message[] = []): GeminiHistoryItem[] => {
       role: item.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: item.content }],
     }));
+};
+
+const stripCodeFence = (value: string): string => {
+  return value
+    .trim()
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim();
+};
+
+const findFirstJsonObject = (value: string): string | null => {
+  const start = value.indexOf('{');
+  if (start === -1) return null;
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let index = start; index < value.length; index += 1) {
+    const char = value[index];
+
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+
+    if (char === '\\') {
+      escaped = inString;
+      continue;
+    }
+
+    if (char === '"') {
+      inString = !inString;
+      continue;
+    }
+
+    if (inString) continue;
+
+    if (char === '{') depth += 1;
+    if (char === '}') depth -= 1;
+
+    if (depth === 0) {
+      return value.slice(start, index + 1);
+    }
+  }
+
+  return null;
+};
+
+const getExtractionCandidate = (reply: string): string | null => {
+  const taggedMatch = reply.match(/<extracted\b[^>]*>([\s\S]*?)<\/extracted>/i);
+  const source = taggedMatch?.[1] ?? reply;
+  return findFirstJsonObject(stripCodeFence(source));
 };
 
 export const onboardingService = {
@@ -62,14 +127,26 @@ export const onboardingService = {
   },
 
   // ── 2. Parse <extracted> block from AI response ───────────────────────────
-  parseExtracted(reply: string) {
-    const match = reply.match(/<extracted>([\s\S]*?)<\/extracted>/);
-    if (!match) return null;
+  parseExtracted(reply: string): ExtractedProfile | null {
+    const candidate = getExtractionCandidate(reply);
+    if (!candidate) return null;
 
     try {
-      return JSON.parse(match[1].trim());
-    } catch {
-      logger.warn('Failed to parse extracted JSON from AI response');
+      const parsed = JSON.parse(candidate.replace(/,\s*([}\]])/g, '$1'));
+      const result = extractedProfileSchema.safeParse(parsed);
+
+      if (!result.success) {
+        logger.warn('Extracted onboarding JSON failed validation', {
+          errors: result.error.flatten().fieldErrors,
+        });
+        return null;
+      }
+
+      return result.data;
+    } catch (error) {
+      logger.warn('Failed to parse extracted JSON from AI response', {
+        error: error instanceof Error ? error.message : String(error),
+      });
       return null;
     }
   },

@@ -9,13 +9,14 @@ import {
 
 const router = Router();
 
-// Public
-router.get('/:id', userController.getPublicProfile);
-
 // Protected
 router.get('/me/profile', protect, userController.getMyProfile);
+router.get('/me/financial-report.pdf', protect, userController.exportFinancialReport);
 router.patch('/me', protect, validateRequest(updateProfileSchema), userController.updateProfile);
 router.patch('/me/economic-profile', protect, validateRequest(updateEconomicProfileSchema), userController.updateEconomicProfile);
 router.get('/', protect, userController.getAllUsers);
+
+// Public
+router.get('/:id', userController.getPublicProfile);
 
 export default router;
