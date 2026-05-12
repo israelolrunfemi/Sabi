@@ -17,6 +17,7 @@ import onboardingRoutes from './routes/onboard.routes';
 import buyerRequestRoutes from './routes/buyer-request.routes';
 import exportRoutes from './routes/export.routes';
 import gigRoutes from './routes/gig.routes';
+import webhookRoutes from './routes/webhook.routes';
 
 const app: Application = express();
 
@@ -46,6 +47,7 @@ app.use(`${BASE}/payments`, paymentRoutes);
 app.use(`${BASE}/export`, exportRoutes);
 app.use(`${BASE}/buyer-requests`, buyerRequestRoutes);
 app.use(`${BASE}/gigs`, gigRoutes);
+app.use(`${BASE}/webhooks`, webhookRoutes);
 
 // ── 404 Handler ─────────────────────────────────────────────────────────────
 app.use((req: Request, _res: Response, next: NextFunction) => {
