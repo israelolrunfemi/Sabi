@@ -45,10 +45,6 @@ GEMINI_MODEL: optional("GEMINI_MODEL", "gemini-3.1-flash-lite"),
   CLOUDINARY_API_KEY: optional('CLOUDINARY_API_KEY', ''),
   CLOUDINARY_API_SECRET: optional('CLOUDINARY_API_SECRET', ''),
 
-  // CORS
-  ALLOWED_ORIGIN_DEV: optional('ALLOWED_ORIGIN_DEV', 'http://localhost:3000'),
-  ALLOWED_ORIGIN_PROD: optional('ALLOWED_ORIGIN_PROD', ''),
-
   // Logging
   LOG_LEVEL: optional('LOG_LEVEL', 'debug'),
 

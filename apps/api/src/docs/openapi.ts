@@ -1,4 +1,4 @@
-export const openApiSpec = {
+export const openApiSpec: Record<string, unknown> = {
   openapi: '3.0.3',
   info: {
     title: 'Sabi API',
@@ -337,7 +337,7 @@ export const openApiSpec = {
     '/buyer-requests/analyse': {
       post: {
         tags: ['Buyer Requests'],
-        summary: 'Analyse an image and match traders',
+        summary: 'Analyse a typed request or optional image and match traders',
         requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/BuyerRequestInput' } } } },
         responses: {
           '201': { description: 'Buyer request analysed and matched', content: { 'application/json': { schema: { $ref: '#/components/schemas/ApiResponse' } } } },
@@ -683,11 +683,15 @@ export const openApiSpec = {
       },
       BuyerRequestInput: {
         type: 'object',
-        required: ['imageBase64', 'mimeType'],
+        description: 'Provide description for text search. imageBase64 and mimeType are optional, but must be sent together when uploading an image.',
+        anyOf: [
+          { required: ['description'] },
+          { required: ['imageBase64', 'mimeType'] },
+        ],
         properties: {
-          imageBase64: { type: 'string', minLength: 100, description: 'Base64 image data without data URL prefix' },
+          imageBase64: { type: 'string', minLength: 100, description: 'Optional base64 image data without data URL prefix' },
           mimeType: { type: 'string', enum: ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif'] },
-          description: { type: 'string', maxLength: 1000 },
+          description: { type: 'string', minLength: 3, maxLength: 1000, example: 'I need a tailor to sew an ankara dress with puff sleeves' },
         },
       },
       TrustScoreResponse: {
@@ -742,4 +746,4 @@ export const openApiSpec = {
       'Public /pay/:username payment page API support',
     ],
   },
-} as const;
+};

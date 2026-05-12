@@ -120,25 +120,32 @@ const parseTraderMatches = (reply: string): TraderMatch[] => {
 };
 
 export const buyerRequestService = {
-  async analyseImage(imageBase64: string, mimeType: string, description?: string) {
+  async analyseNeed(input: CreateBuyerRequestInput) {
+    const parts = [];
+
+    if (input.imageBase64 && input.mimeType) {
+      parts.push({
+        inlineData: {
+          mimeType: input.mimeType,
+          data: input.imageBase64,
+        },
+      });
+    }
+
+    parts.push({
+      text: input.imageBase64
+        ? input.description
+          ? `The buyer also says: "${input.description}". Analyse the image and text, then extract what service or product they need.`
+          : 'Analyse this image and extract what service or product the buyer needs.'
+        : `The buyer says: "${input.description}". Extract what service or product they need.`,
+    });
+
     const response = await gemini.models.generateContent({
       model: env.GEMINI_MODEL,
       contents: [
         {
           role: 'user',
-          parts: [
-            {
-              inlineData: {
-                mimeType,
-                data: imageBase64,
-              },
-            },
-            {
-              text: description
-                ? `The buyer also says: "${description}". Analyse the image and extract what service or product they need.`
-                : 'Analyse this image and extract what service or product the buyer needs.',
-            },
-          ],
+          parts,
         },
       ],
       config: {
@@ -153,11 +160,7 @@ export const buyerRequestService = {
 
   async matchTradersToNeed(buyerId: string, input: CreateBuyerRequestInput) {
     try {
-      const extractedNeed = await buyerRequestService.analyseImage(
-        input.imageBase64,
-        input.mimeType,
-        input.description
-      );
+      const extractedNeed = await buyerRequestService.analyseNeed(input);
 
       const includeActiveTrader = [
         {
@@ -226,7 +229,10 @@ export const buyerRequestService = {
         .filter((match) => allowedTraderIds.has(match.traderId))
         .sort((left, right) => right.score - left.score);
 
-      const imageUrl = await uploadToCloudinary(input.imageBase64, input.mimeType);
+      const imageUrl =
+        input.imageBase64 && input.mimeType
+          ? await uploadToCloudinary(input.imageBase64, input.mimeType)
+          : null;
       const saved = await BuyerRequest.create({
         buyerId,
         imageUrl,

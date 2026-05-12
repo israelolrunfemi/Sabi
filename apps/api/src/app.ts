@@ -1,5 +1,4 @@
 import express, { Application, Request, Response, NextFunction } from 'express';
-import { corsConfig } from './config/cors.config';
 import { errorMiddleware } from './middlewares/error.middleware';
 import { logger } from './config/logger.config';
 import { env } from './config/env.config';
@@ -25,8 +24,6 @@ import docsRoutes from './routes/docs.routes';
 const app: Application = express();
 
 // ── Global Middleware ───────────────────────────────────────────────────────
-app.use(corsConfig);
-app.options('*', corsConfig);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
