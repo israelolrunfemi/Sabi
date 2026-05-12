@@ -24,21 +24,21 @@ DATABASE_URL: optional('DATABASE_URL', ''),
 
 
 
-  // Auth
-  // JWT_SECRET: required('JWT_SECRET'),
-  // JWT_EXPIRES_IN: optional('JWT_EXPIRES_IN', '15m'),
-  // JWT_REFRESH_SECRET: required('JWT_REFRESH_SECRET'),
-  // JWT_REFRESH_EXPIRES_IN: optional('JWT_REFRESH_EXPIRES_IN', '7d'),
+  /// Auth
+  JWT_SECRET: required('JWT_SECRET'),
+  JWT_EXPIRES_IN: optional('JWT_EXPIRES_IN', '15m'),
+  JWT_REFRESH_SECRET: required('JWT_REFRESH_SECRET'),
+  JWT_REFRESH_EXPIRES_IN: optional('JWT_REFRESH_EXPIRES_IN', '7d'),
 
   // Squad
-  // SQUAD_API_KEY: required('SQUAD_API_KEY'),
-  // SQUAD_BASE_URL: optional('SQUAD_BASE_URL', 'https://sandbox-api-d.squadco.com'),
-  // SQUAD_WEBHOOK_SECRET: required('SQUAD_WEBHOOK_SECRET'),
+  SQUAD_API_KEY: required('SQUAD_API_KEY'),
+  SQUAD_BASE_URL: optional('SQUAD_BASE_URL', 'https://sandbox-api-d.squadco.com'),
+  SQUAD_WEBHOOK_SECRET: required('SQUAD_WEBHOOK_SECRET'),
+  SQUAD_BENEFICIARY_ACCOUNT: optional('SQUAD_BENEFICIARY_ACCOUNT', '0123456789'),
 
-  // Anthropic
-  // ANTHROPIC_API_KEY: required('ANTHROPIC_API_KEY'),
-  // ANTHROPIC_MODEL: optional('ANTHROPIC_MODEL', 'claude-sonnet-4-20250514'),
-  // ANTHROPIC_MAX_TOKENS: parseInt(optional('ANTHROPIC_MAX_TOKENS', '1000'), 10),
+  // GEMINI
+GEMINI_API_KEY: required('GEMINI_API_KEY'),
+GEMINI_MODEL: optional("GEMINI_MODEL", "gemini-3.1-flash-lite"),
 
   // Cloudinary
   CLOUDINARY_CLOUD_NAME: optional('CLOUDINARY_CLOUD_NAME', ''),
@@ -51,6 +51,9 @@ DATABASE_URL: optional('DATABASE_URL', ''),
 
   // Logging
   LOG_LEVEL: optional('LOG_LEVEL', 'debug'),
+
+  //Ngrok
+  NGROK_AUTHTOKEN: optional('NGROK_AUTHTOKEN', ''),
 
   // Helpers
   get isDev() { return this.NODE_ENV === 'development'; },
