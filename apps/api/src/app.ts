@@ -20,6 +20,7 @@ import gigRoutes from './routes/gig.routes';
 import webhookRoutes from './routes/webhook.routes';
 import trustScoreRoutes from './routes/trust-score.routes';
 import vouchRoutes from './routes/vouch.routes';
+import docsRoutes from './routes/docs.routes';
 
 const app: Application = express();
 
@@ -41,6 +42,7 @@ if (env.isDev) {
 const BASE = `/api/${env.API_VERSION}`;
 
 app.use(`${BASE}/health`, healthRoutes);
+app.use(`${BASE}/docs`, docsRoutes);
 app.use(`${BASE}/auth`, authRoutes);
 app.use(`${BASE}/users`, userRoutes);
 app.use(`${BASE}/onboard`,  onboardingRoutes);
