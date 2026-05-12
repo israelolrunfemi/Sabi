@@ -54,6 +54,19 @@ Vouch.init(
     modelName: 'Vouch',
     tableName: 'vouches',
     underscored: true,
+    indexes: [
+      {
+        unique: true,
+        fields: ['voucher_id', 'vouchee_id'],
+      },
+    ],
+    validate: {
+      cannotVouchForSelf() {
+        if (this.voucherId === this.voucheeId) {
+          throw new Error('You cannot vouch for yourself.');
+        }
+      },
+    },
   }
 );
 
