@@ -11,9 +11,11 @@ import healthRoutes from './routes/health.routes';
 // Add your routes here as you build them:
 import userRoutes from './routes/user.routes';
 import authRoutes from './routes/auth.routes';
-// import matchRoutes from './routes/match.routes';
+import matchRoutes from './routes/match.routes';
  import paymentRoutes from './routes/payment.routes';
 import onboardingRoutes from './routes/onboard.routes';
+import buyerRequestRoutes from './routes/buyer-request.routes';
+import exportRoutes from './routes/export.routes';
 
 const app: Application = express();
 
@@ -38,8 +40,10 @@ app.use(`${BASE}/health`, healthRoutes);
 app.use(`${BASE}/auth`, authRoutes);
 app.use(`${BASE}/users`, userRoutes);
 app.use(`${BASE}/onboard`,  onboardingRoutes);
-// app.use(`${BASE}/matches`, matchRoutes);
+app.use(`${BASE}/matches`, matchRoutes);
 app.use(`${BASE}/payments`, paymentRoutes);
+app.use(`${BASE}/export`, exportRoutes);
+app.use(`${BASE}/buyer-requests`, buyerRequestRoutes);
 
 // ── 404 Handler ─────────────────────────────────────────────────────────────
 app.use((req: Request, _res: Response, next: NextFunction) => {

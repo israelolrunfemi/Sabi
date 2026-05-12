@@ -1,5 +1,5 @@
 import { squadClient } from '../config/squad.config';
-import { SquadAccount, Transaction } from '../models/index';
+import { SquadAccount } from '../models/index';
 import { AppError } from '../utils/app.error';
 import { logger } from '../config/logger.config';
 import { v4 as uuidv4 } from 'uuid';
