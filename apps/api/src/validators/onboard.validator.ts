@@ -22,13 +22,46 @@ const extractedProfileSchema = z.object({
   description: z.string().min(1),
 });
 
+const normalizeProfilePayload = (value: unknown) => {
+  if (!value || typeof value !== 'object') return value;
+
+  const payload = value as Record<string, unknown>;
+  const skills = payload.skills;
+  const language = payload.language ?? payload.languages;
+
+  return {
+    ...payload,
+    tradeCategory: payload.tradeCategory ?? payload.category ?? payload.businessCategory,
+    skills:
+      typeof skills === 'string'
+        ? skills
+            .split(',')
+            .map((skill) => skill.trim())
+            .filter(Boolean)
+        : skills,
+    language: Array.isArray(language) ? language.join(', ') : language,
+    yearsExperience: payload.yearsExperience ?? payload.yearsOfExperience ?? payload.experienceYears,
+    description: payload.description ?? payload.bio ?? payload.summary,
+  };
+};
+
 export const completeOnboardingSchema = z.preprocess((body) => {
   if (!body || typeof body !== 'object') return body;
 
   const payload = body as {
     extractedData?: unknown;
-    data?: { extractedData?: unknown };
+    data?: { extractedData?: unknown; profile?: unknown; economicProfile?: unknown };
+    profile?: unknown;
+    economicProfile?: unknown;
   };
 
-  return payload.extractedData ?? payload.data?.extractedData ?? body;
+  return normalizeProfilePayload(
+    payload.extractedData ??
+      payload.data?.extractedData ??
+      payload.profile ??
+      payload.data?.profile ??
+      payload.economicProfile ??
+      payload.data?.economicProfile ??
+      body
+  );
 }, extractedProfileSchema);

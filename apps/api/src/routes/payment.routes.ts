@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { paymentController } from '../controllers/payment.controller';
 import { protect } from '../middlewares/auth.middleware';
 import { validateRequest } from '../middlewares/validate.middleware';
-import { initiatePaymentSchema } from '../validators/payment.validator';
+import { createEscrowSchema, initiatePaymentSchema } from '../validators/payment.validator';
 
 const router = Router();
 
@@ -10,6 +10,11 @@ const router = Router();
 router.use(protect);
 
 router.post('/initiate', validateRequest(initiatePaymentSchema), paymentController.initiatePayment);
+router.post('/escrow', validateRequest(createEscrowSchema), paymentController.createEscrow);
+router.get('/escrow', paymentController.listEscrows);
+router.patch('/escrow/:escrowId/start', paymentController.startEscrow);
+router.patch('/escrow/:escrowId/release', paymentController.releaseEscrow);
+router.patch('/escrow/:escrowId/refund', paymentController.refundEscrow);
 router.get('/verify/:transactionRef', paymentController.verifyTransaction);
 router.get('/transactions', paymentController.getTransactions);
 router.get('/wallet', paymentController.getWallet);
