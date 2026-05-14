@@ -11,9 +11,14 @@ const start = async (): Promise<void> => {
     await sequelize.sync();
     logger.info('Database synced');
 
-    const server = app.listen(env.PORT, () => {
-      logger.info(`Sabi API running on port ${env.PORT}`);
+    const server = app.listen(env.PORT);
+
+    await new Promise<void>((resolve, reject) => {
+      server.once('listening', () => resolve());
+      server.once('error', (error) => reject(error));
     });
+
+    logger.info(`Sabi API running on port ${env.PORT}`);
 
     const shutdown = (signal: string) => {
       logger.info(`${signal} received — shutting down`);
@@ -24,7 +29,10 @@ const start = async (): Promise<void> => {
     process.on('SIGINT', () => shutdown('SIGINT'));
 
   } catch (err) {
-    logger.error('Failed to start server', { error: (err as Error).message });
+    logger.error('Failed to start server', {
+      error: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
     process.exit(1);
   }
 };
