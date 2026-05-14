@@ -13,4 +13,12 @@ export const verifyTransactionSchema = z.object({
   transactionRef: z.string().min(1, 'Transaction reference is required'),
 });
 
+export const createEscrowSchema = z.object({
+  traderId: z.string().uuid('Trader ID must be a valid UUID'),
+  amount: z.number({ error: 'Amount must be a number' }).positive('Amount must be greater than zero'),
+  description: z.string().trim().min(2).max(255).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
 export type InitiatePaymentInput = z.infer<typeof initiatePaymentSchema>;
+export type CreateEscrowInput = z.infer<typeof createEscrowSchema>;

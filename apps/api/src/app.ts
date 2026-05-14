@@ -1,5 +1,4 @@
 import express, { Application, Request, Response, NextFunction } from 'express';
-import { corsConfig } from './config/cors.config';
 import { errorMiddleware } from './middlewares/error.middleware';
 import { logger } from './config/logger.config';
 import { env } from './config/env.config';
@@ -18,12 +17,13 @@ import buyerRequestRoutes from './routes/buyer-request.routes';
 import exportRoutes from './routes/export.routes';
 import gigRoutes from './routes/gig.routes';
 import webhookRoutes from './routes/webhook.routes';
+import trustScoreRoutes from './routes/trust-score.routes';
+import vouchRoutes from './routes/vouch.routes';
+import docsRoutes from './routes/docs.routes';
 
 const app: Application = express();
 
 // ── Global Middleware ───────────────────────────────────────────────────────
-app.use(corsConfig);
-app.options('*', corsConfig);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -39,6 +39,7 @@ if (env.isDev) {
 const BASE = `/api/${env.API_VERSION}`;
 
 app.use(`${BASE}/health`, healthRoutes);
+app.use(`${BASE}/docs`, docsRoutes);
 app.use(`${BASE}/auth`, authRoutes);
 app.use(`${BASE}/users`, userRoutes);
 app.use(`${BASE}/onboard`,  onboardingRoutes);
@@ -48,6 +49,9 @@ app.use(`${BASE}/export`, exportRoutes);
 app.use(`${BASE}/buyer-requests`, buyerRequestRoutes);
 app.use(`${BASE}/gigs`, gigRoutes);
 app.use(`${BASE}/webhooks`, webhookRoutes);
+app.use(`${BASE}/trust-score`, trustScoreRoutes);
+app.use(`${BASE}/trust`, trustScoreRoutes);
+app.use(`${BASE}/vouches`, vouchRoutes);
 
 // ── 404 Handler ─────────────────────────────────────────────────────────────
 app.use((req: Request, _res: Response, next: NextFunction) => {

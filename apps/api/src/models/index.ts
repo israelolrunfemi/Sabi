@@ -8,6 +8,7 @@ import Rating from './rating.model';
 import Vouch from './vouch.model';
 import BuyerRequest from './buyer-request.model';
 import GigApplication from './gig-application.model';
+import EscrowPayment from './escrow-payment.model';
 
 // ── Associations ────────────────────────────────────────────────────────────
 User.hasOne(EconomicProfile, { foreignKey: 'userId', as: 'economicProfile' });
@@ -21,6 +22,8 @@ User.hasMany(Vouch, { foreignKey: 'voucheeId', as: 'vouchesReceived' });
 User.hasMany(Vouch, { foreignKey: 'voucherId', as: 'vouchesGiven' });
 User.hasMany(BuyerRequest, { foreignKey: 'buyerId', as: 'buyerRequests' });
 User.hasMany(GigApplication, { foreignKey: 'seekerId', as: 'applications' });
+User.hasMany(EscrowPayment, { foreignKey: 'buyerId', as: 'buyerEscrowPayments' });
+User.hasMany(EscrowPayment, { foreignKey: 'traderId', as: 'traderEscrowPayments' });
 Opportunity.hasMany(GigApplication, { foreignKey: 'opportunityId', as: 'applications' });
 
 EconomicProfile.belongsTo(User, { foreignKey: 'userId', as: 'user' });
@@ -37,6 +40,8 @@ Vouch.belongsTo(User, { foreignKey: 'voucheeId', as: 'vouchee' });
 BuyerRequest.belongsTo(User, { foreignKey: 'buyerId', as: 'buyer' });
 GigApplication.belongsTo(Opportunity, { foreignKey: 'opportunityId', as: 'opportunity' });
 GigApplication.belongsTo(User, { foreignKey: 'seekerId', as: 'seeker' });
+EscrowPayment.belongsTo(User, { foreignKey: 'buyerId', as: 'buyer' });
+EscrowPayment.belongsTo(User, { foreignKey: 'traderId', as: 'trader' });
 
 export {
   User,
@@ -49,5 +54,6 @@ export {
   Vouch,
   BuyerRequest,
   GigApplication,
+  EscrowPayment,
 };
 

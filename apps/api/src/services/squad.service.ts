@@ -72,6 +72,9 @@ export const squadService = {
   // ── 2. Initiate Payment (Generate Checkout URL) ───────────────────────────
   async initiatePayment(userId: string, input: InitiatePaymentInput) {
     const transactionRef = `SABI_${userId}_${uuidv4().replace(/-/g, '').slice(0, 12)}`;
+    const callbackUrl =
+      input.callbackUrl ??
+      `${env.CLIENT_BASE_URL}/payment/callback?transactionRef=${encodeURIComponent(transactionRef)}`;
 
     const response = await squadClient.post('/transaction/initiate', {
       amount: input.amount,                    // in kobo — 10000 = ₦100
@@ -80,7 +83,7 @@ export const squadService = {
       initiate_type: 'inline',
       transaction_ref: transactionRef,
       customer_name: input.customerName,
-      callback_url: input.callbackUrl ?? `${process.env.NEXT_PUBLIC_APP_URL}/payment/callback`,
+      callback_url: callbackUrl,
       payment_channels: ['card', 'bank', 'transfer'],
     });
 
@@ -95,6 +98,7 @@ export const squadService = {
     return {
       checkoutUrl: data.checkout_url,
       transactionRef: data.transaction_ref,
+      callbackUrl,
     };
   },
 
