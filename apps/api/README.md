@@ -121,6 +121,20 @@ The default local base URL is:
 http://localhost:5000/api/v1
 ```
 
+Production base URL:
+
+```text
+https://sabi-api.onrender.com/api/v1
+```
+
+Use the same route paths against either server, for example:
+
+```text
+/auth/login
+/onboard/chat
+/onboard/complete
+```
+
 ## API Docs
 
 Swagger UI:
@@ -255,6 +269,19 @@ Seed sample users and economic profiles:
 
 ```bash
 pnpm.cmd run seed:profiles
+```
+
+To seed the Render database, point Render at the same production `DATABASE_URL` and run the compiled seed against the built output:
+
+```bash
+npm run build
+node dist/seeds/profiles.seed.js
+```
+
+If you want a single command locally or in a Render shell, use:
+
+```bash
+npm run seed:profiles:prod
 ```
 
 Shared password for seeded users:
