@@ -5,10 +5,18 @@ import { AppError } from '../utils/app.error';
 export const squadClient = axios.create({
   baseURL: env.SQUAD_BASE_URL,
   headers: {
-    Authorization: `Bearer ${env.SQUAD_API_KEY}`,
+    Authorization: `Bearer ${env.SQUAD_API_KEY || 'missing'}`,
     'Content-Type': 'application/json',
   },
   timeout: 30000,
+});
+
+squadClient.interceptors.request.use((config) => {
+  if (!env.SQUAD_API_KEY) {
+    return Promise.reject(new AppError('SQUAD_API_KEY is not configured.', 500));
+  }
+
+  return config;
 });
 
 // Log Squad errors in dev

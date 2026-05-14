@@ -15,6 +15,10 @@ const requiredSignatureFields = [
 
 export const verifySquadWebhook = (req: Request, _res: Response, next: NextFunction): void => {
   try {
+    if (!env.SQUAD_WEBHOOK_SECRET) {
+      throw new AppError('SQUAD_WEBHOOK_SECRET is not configured.', 500);
+    }
+
     const signature = req.headers['x-squad-signature'] as string | undefined;
 
     if (!signature) {

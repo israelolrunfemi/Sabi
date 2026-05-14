@@ -33,8 +33,7 @@ export const env = {
   API_VERSION: optional('API_VERSION', 'v1'),
 
   // Database
-// Database
-DATABASE_URL: optional('DATABASE_URL', ''),
+  DATABASE_URL: required('DATABASE_URL'),
 
 
 
@@ -45,14 +44,14 @@ DATABASE_URL: optional('DATABASE_URL', ''),
   JWT_REFRESH_EXPIRES_IN: optional('JWT_REFRESH_EXPIRES_IN', '7d'),
 
   // Squad
-  SQUAD_API_KEY: required('SQUAD_API_KEY'),
+  SQUAD_API_KEY: optional('SQUAD_API_KEY', ''),
   SQUAD_BASE_URL: optional('SQUAD_BASE_URL', 'https://sandbox-api-d.squadco.com'),
-  SQUAD_WEBHOOK_SECRET: required('SQUAD_WEBHOOK_SECRET'),
+  SQUAD_WEBHOOK_SECRET: optional('SQUAD_WEBHOOK_SECRET', ''),
   SQUAD_BENEFICIARY_ACCOUNT: optional('SQUAD_BENEFICIARY_ACCOUNT', '0123456789'),
 
   // GEMINI
-GEMINI_API_KEY: required('GEMINI_API_KEY'),
-GEMINI_MODEL: optional("GEMINI_MODEL", "gemini-3.1-flash-lite"),
+  GEMINI_API_KEY: optional('GEMINI_API_KEY', ''),
+  GEMINI_MODEL: optional('GEMINI_MODEL', 'gemini-3.1-flash-lite'),
 
   // Cloudinary
   CLOUDINARY_CLOUD_NAME: optional('CLOUDINARY_CLOUD_NAME', ''),
