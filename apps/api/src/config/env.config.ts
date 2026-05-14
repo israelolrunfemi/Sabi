@@ -2,14 +2,28 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+const cleanEnvValue = (value: string): string => {
+  const trimmed = value.trim();
+
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    return trimmed.slice(1, -1).trim();
+  }
+
+  return trimmed;
+};
+
 const required = (key: string): string => {
   const value = process.env[key];
   if (!value) throw new Error(`Missing required environment variable: ${key}`);
-  return value;
+  return cleanEnvValue(value);
 };
 
 const optional = (key: string, fallback: string): string => {
-  return process.env[key] ?? fallback;
+  const value = process.env[key];
+  return value ? cleanEnvValue(value) : fallback;
 };
 
 export const env = {
@@ -50,6 +64,9 @@ GEMINI_MODEL: optional("GEMINI_MODEL", "gemini-3.1-flash-lite"),
 
   //Ngrok
   NGROK_AUTHTOKEN: optional('NGROK_AUTHTOKEN', ''),
+
+  // Client
+  CLIENT_BASE_URL: optional('CLIENT_BASE_URL', 'http://localhost:3000'),
 
   // Helpers
   get isDev() { return this.NODE_ENV === 'development'; },

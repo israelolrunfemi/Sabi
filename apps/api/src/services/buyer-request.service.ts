@@ -119,8 +119,122 @@ const parseTraderMatches = (reply: string): TraderMatch[] => {
   return result.data;
 };
 
+const categoryKeywordMap: Record<ExtractedNeed['category'], string[]> = {
+  tailoring: ['tailor', 'tailoring', 'sew', 'sewing', 'native wear', 'dress', 'fashion', 'alteration'],
+  'phone repair': ['phone', 'screen', 'charging port', 'battery', 'repair phone', 'mobile'],
+  fabric: ['fabric', 'cloth', 'textile', 'ankara', 'lace', 'material'],
+  food: ['food', 'rice', 'beans', 'catering', 'cook', 'small chops', 'restaurant'],
+  construction: ['construction', 'builder', 'plumber', 'plumbing', 'carpenter', 'electrical', 'wiring'],
+  electronics: ['electronics', 'appliance', 'generator', 'inverter', 'tv', 'fridge'],
+  beauty: ['beauty', 'makeup', 'hair', 'salon', 'barber', 'gele'],
+  photography: ['photo', 'photography', 'video', 'camera', 'event coverage'],
+  other: [],
+};
+
+const inferCategoryFromDescription = (description: string): ExtractedNeed['category'] => {
+  const lower = description.toLowerCase();
+
+  for (const [category, keywords] of Object.entries(categoryKeywordMap) as [
+    ExtractedNeed['category'],
+    string[],
+  ][]) {
+    if (keywords.some((keyword) => lower.includes(keyword))) return category;
+  }
+
+  return 'other';
+};
+
+const extractBudgetFromDescription = (description: string): number | null => {
+  const match = description.match(/(?:₦|ngn|n)?\s?(\d{1,3}(?:,\d{3})+|\d{4,})/i);
+  if (!match) return null;
+
+  const amount = Number(match[1].replace(/,/g, ''));
+  return Number.isFinite(amount) ? amount : null;
+};
+
+const localNeedFromDescription = (description?: string): ExtractedNeed => {
+  const text = description?.trim() || 'General market request';
+  const category = inferCategoryFromDescription(text);
+
+  return {
+    serviceNeeded: text,
+    category,
+    specificRequirements: [text],
+    estimatedBudget: extractBudgetFromDescription(text),
+    urgency: /urgent|today|tomorrow|asap|quick/i.test(text) ? 'high' : 'normal',
+  };
+};
+
+const scoreTraderLocally = (need: ExtractedNeed, trader: EconomicProfile & { user?: User }): TraderMatch | null => {
+  const user = trader.user;
+  if (!user) return null;
+
+  const terms = categorySearchTerms[need.category];
+  const haystack = [
+    trader.tradeCategory,
+    trader.description ?? '',
+    trader.location ?? '',
+    ...trader.skills,
+  ]
+    .join(' ')
+    .toLowerCase();
+
+  const categoryHits = terms.filter((term) => haystack.includes(term)).length;
+  const requirementHits = need.specificRequirements.filter((requirement) =>
+    haystack.includes(requirement.toLowerCase())
+  ).length;
+  const categoryScore = need.category === 'other' ? 20 : Math.min(categoryHits * 18, 54);
+  const requirementScore = Math.min(requirementHits * 8, 16);
+  const trustScore = Math.min(user.trustScore, 100) * 0.2;
+  const experienceScore = Math.min(trader.yearsExperience, 10);
+  const score = Math.round(Math.min(100, categoryScore + requirementScore + trustScore + experienceScore));
+
+  return {
+    traderId: user.id,
+    score,
+    reasoning: `Matched by ${need.category} request, trader profile, experience, and trust score.`,
+    keyStrengths: [
+      trader.tradeCategory,
+      `${trader.yearsExperience} years experience`,
+      `Trust score ${user.trustScore}`,
+    ],
+  };
+};
+
 export const buyerRequestService = {
   async analyseNeed(input: CreateBuyerRequestInput) {
+    if (!input.imageBase64 && input.description) {
+      try {
+        const parts = [
+          {
+            text: `The buyer says: "${input.description}". Extract what service or product they need.`,
+          },
+        ];
+
+        const response = await gemini.models.generateContent({
+          model: env.GEMINI_MODEL,
+          contents: [
+            {
+              role: 'user',
+              parts,
+            },
+          ],
+          config: {
+            systemInstruction: VISUAL_MATCH_SYSTEM_PROMPT,
+            temperature: 0.1,
+            maxOutputTokens: 1000,
+          },
+        });
+
+        return parseExtractedNeed(response.text ?? '');
+      } catch (error) {
+        logger.warn('Text buyer need extraction fell back to local parser', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+        return localNeedFromDescription(input.description);
+      }
+    }
+
     const parts = [];
 
     if (input.imageBase64 && input.mimeType) {
@@ -191,43 +305,56 @@ export const buyerRequestService = {
         });
       }
 
-      const matchResponse = await gemini.models.generateContent({
-        model: env.GEMINI_MODEL,
-        contents: JSON.stringify(
-          {
-            buyerNeed: extractedNeed,
-            traders: traders.map((trader) => {
-              const user = (trader as EconomicProfile & { user?: User }).user;
-
-              return {
-                traderId: user?.id,
-                tradeCategory: trader.tradeCategory,
-                skills: trader.skills,
-                location: trader.location,
-                yearsExperience: trader.yearsExperience,
-                trustScore: user?.trustScore,
-              };
-            }),
-          },
-          null,
-          2
-        ),
-        config: {
-          systemInstruction: BUYER_TRADER_MATCH_SYSTEM_PROMPT,
-          temperature: 0.2,
-          maxOutputTokens: 2000,
-          responseMimeType: 'application/json',
-        },
-      });
-
       const allowedTraderIds = new Set(
         traders
           .map((trader) => (trader as EconomicProfile & { user?: User }).user?.id)
           .filter((id): id is string => Boolean(id))
       );
-      const matches = parseTraderMatches(matchResponse.text ?? '')
-        .filter((match) => allowedTraderIds.has(match.traderId))
-        .sort((left, right) => right.score - left.score);
+      let matches: TraderMatch[];
+
+      try {
+        const matchResponse = await gemini.models.generateContent({
+          model: env.GEMINI_MODEL,
+          contents: JSON.stringify(
+            {
+              buyerNeed: extractedNeed,
+              traders: traders.map((trader) => {
+                const user = (trader as EconomicProfile & { user?: User }).user;
+
+                return {
+                  traderId: user?.id,
+                  tradeCategory: trader.tradeCategory,
+                  skills: trader.skills,
+                  location: trader.location,
+                  yearsExperience: trader.yearsExperience,
+                  trustScore: user?.trustScore,
+                };
+              }),
+            },
+            null,
+            2
+          ),
+          config: {
+            systemInstruction: BUYER_TRADER_MATCH_SYSTEM_PROMPT,
+            temperature: 0.2,
+            maxOutputTokens: 2000,
+            responseMimeType: 'application/json',
+          },
+        });
+
+        matches = parseTraderMatches(matchResponse.text ?? '')
+          .filter((match) => allowedTraderIds.has(match.traderId))
+          .sort((left, right) => right.score - left.score);
+      } catch (error) {
+        logger.warn('Trader ranking fell back to local scoring', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+        matches = traders
+          .map((trader) => scoreTraderLocally(extractedNeed, trader as EconomicProfile & { user?: User }))
+          .filter((match): match is TraderMatch => Boolean(match))
+          .filter((match) => allowedTraderIds.has(match.traderId))
+          .sort((left, right) => right.score - left.score);
+      }
 
       const imageUrl =
         input.imageBase64 && input.mimeType

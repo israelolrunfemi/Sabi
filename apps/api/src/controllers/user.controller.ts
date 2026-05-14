@@ -67,9 +67,13 @@ export const userController = {
   async exportFinancialReport(req: Request, res: Response, next: NextFunction) {
     try {
       const report = await financialReportService.generateForUser(req.user!.userId);
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${report.filename}"`);
-      res.status(200).send(report.buffer);
+      res.set({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${report.filename}"`,
+        'Content-Length': report.buffer.length,
+        'Cache-Control': 'no-store',
+      });
+      res.status(200).end(report.buffer);
     } catch (err) {
       next(err);
     }

@@ -94,6 +94,7 @@ CLOUDINARY_API_SECRET=
 
 LOG_LEVEL=debug
 NGROK_AUTHTOKEN=
+CLIENT_BASE_URL=http://localhost:3000
 ```
 
 Run the API in development:
@@ -275,5 +276,5 @@ Seeded accounts:
 
 - CORS is intentionally not mounted in this API.
 - Registration currently attempts Squad virtual account creation in the background. If Squad fails, registration still succeeds.
-- `sequelize.sync({ alter: true })` runs on server start, which is useful for the hackathon build but should be replaced with migrations before production.
+- `sequelize.sync()` runs on server start. Use migrations for production schema changes.
 - Most response bodies follow `{ success, message, data, meta? }`.

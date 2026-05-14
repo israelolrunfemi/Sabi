@@ -1,7 +1,8 @@
+import { Op } from 'sequelize';
 import { gemini } from '../config/gemini.config';
 import { env } from '../config/env.config';
 import { logger } from '../config/logger.config';
-import { EconomicProfile, Rating, Transaction, User, Vouch } from '../models/index';
+import { EconomicProfile, EscrowPayment, Rating, User, Vouch } from '../models/index';
 import { AppError } from '../utils/app.error';
 
 const MIN_STARTING_SCORE = 40;
@@ -121,12 +122,17 @@ export const trustScoreService = {
     if (!user) throw new AppError('User not found.', 404);
 
     const [transactions, ratings, vouchCount] = await Promise.all([
-      Transaction.findAll({ where: { userId } }),
+      EscrowPayment.findAll({
+        where: {
+          [Op.or]: [{ buyerId: userId }, { traderId: userId }],
+          status: { [Op.in]: ['COMPLETED', 'REFUNDED', 'CANCELLED'] },
+        },
+      }),
       Rating.findAll({ where: { rateeId: userId } }),
       Vouch.count({ where: { voucheeId: userId } }),
     ]);
 
-    const successfulTransactions = transactions.filter((transaction) => transaction.status === 'SUCCESS');
+    const successfulTransactions = transactions.filter((transaction) => transaction.status === 'COMPLETED');
     const completionRate =
       transactions.length === 0 ? 0 : successfulTransactions.length / transactions.length;
     const averageRating =

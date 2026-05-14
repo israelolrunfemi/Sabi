@@ -8,7 +8,7 @@ const start = async (): Promise<void> => {
   try {
     await connectDB();
 
-    await sequelize.sync({ alter: true });  
+    await sequelize.sync();
     logger.info('Database synced');
 
     const server = app.listen(env.PORT, () => {

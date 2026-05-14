@@ -28,7 +28,7 @@ export const openApiSpec: Record<string, unknown> = {
     {
       name: 'Implementation Status',
       description:
-        'Implemented: auth, users/profile, onboarding, payments, Squad webhook, gig browse/apply/hire/complete, matching, buyer image analysis, trust score, vouching, PDF export. Missing from the product spec: public /pay/:username, notifications, settings, opportunity CRUD routes, ratings routes, application shortlisting, poster delivery confirmation, and real escrow release.',
+        'Implemented: auth, users/profile, onboarding, payments, Squad webhook, buyer-to-trader escrow, gig browse/apply/hire/complete, matching, buyer image analysis, trust score, vouching, PDF export. Missing from the product spec: public /pay/:username, notifications, settings, opportunity CRUD routes, ratings routes, application shortlisting, and poster delivery confirmation.',
     },
   ],
   security: [{ bearerAuth: [] }],
@@ -157,10 +157,12 @@ export const openApiSpec: Record<string, unknown> = {
       post: {
         tags: ['Onboarding'],
         summary: 'Send an onboarding message to AI',
+        description: 'Only TRADER and SEEKER users can use onboarding. BUYER users should create buyer requests instead.',
         requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/OnboardingChatRequest' } } } },
         responses: {
           '200': { description: 'AI onboarding response', content: { 'application/json': { schema: { $ref: '#/components/schemas/OnboardingChatResponse' } } } },
           '400': { $ref: '#/components/responses/ValidationError' },
+          '403': { $ref: '#/components/responses/Error' },
         },
       },
     },
@@ -168,11 +170,12 @@ export const openApiSpec: Record<string, unknown> = {
       post: {
         tags: ['Onboarding'],
         summary: 'Save completed economic profile',
-        description: 'Accepts either the raw economic profile, { extractedData }, or { data: { extractedData } }.',
+        description: 'Only TRADER and SEEKER users can save onboarding profiles. Accepts either the raw economic profile, { extractedData }, or { data: { extractedData } }.',
         requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/EconomicProfileInput' } } } },
         responses: {
           '200': { description: 'Profile saved', content: { 'application/json': { schema: { $ref: '#/components/schemas/ApiResponse' } } } },
           '400': { $ref: '#/components/responses/ValidationError' },
+          '403': { $ref: '#/components/responses/Error' },
         },
       },
     },
@@ -209,9 +212,78 @@ export const openApiSpec: Record<string, unknown> = {
     '/payments/wallet': {
       get: {
         tags: ['Payments'],
-        summary: 'Get own Squad wallet',
+        summary: 'Get own wallet balance and escrow summary',
         responses: {
           '200': { description: 'Wallet retrieved', content: { 'application/json': { schema: { $ref: '#/components/schemas/WalletResponse' } } } },
+        },
+      },
+    },
+    '/payments/escrow': {
+      post: {
+        tags: ['Payments'],
+        summary: 'Buyer funds escrow for a trader',
+        description: 'Deducts the amount from the authenticated buyer wallet and creates a FUNDED escrow payment for the selected trader.',
+        requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/CreateEscrowRequest' } } } },
+        responses: {
+          '201': { description: 'Escrow funded', content: { 'application/json': { schema: { $ref: '#/components/schemas/EscrowPaymentResponse' } } } },
+          '400': { $ref: '#/components/responses/ValidationError' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+        },
+      },
+      get: {
+        tags: ['Payments'],
+        summary: 'List my escrow payments',
+        parameters: [
+          {
+            name: 'role',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', enum: ['buyer', 'trader'] },
+            description: 'Filter to escrows where the authenticated user is buyer or trader.',
+          },
+        ],
+        responses: {
+          '200': { description: 'Escrows retrieved', content: { 'application/json': { schema: { $ref: '#/components/schemas/EscrowPaymentListResponse' } } } },
+        },
+      },
+    },
+    '/payments/escrow/{escrowId}/start': {
+      patch: {
+        tags: ['Payments'],
+        summary: 'Trader starts an escrow job',
+        description: 'Only the assigned trader can move a FUNDED escrow payment to IN_PROGRESS.',
+        parameters: [{ $ref: '#/components/parameters/EscrowId' }],
+        responses: {
+          '200': { description: 'Escrow marked in progress', content: { 'application/json': { schema: { $ref: '#/components/schemas/EscrowPaymentResponse' } } } },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+        },
+      },
+    },
+    '/payments/escrow/{escrowId}/release': {
+      patch: {
+        tags: ['Payments'],
+        summary: 'Buyer releases escrow to trader wallet',
+        description: 'Only the buyer can release a FUNDED or IN_PROGRESS escrow payment. This credits the trader wallet.',
+        parameters: [{ $ref: '#/components/parameters/EscrowId' }],
+        responses: {
+          '200': { description: 'Escrow released', content: { 'application/json': { schema: { $ref: '#/components/schemas/EscrowPaymentResponse' } } } },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+        },
+      },
+    },
+    '/payments/escrow/{escrowId}/refund': {
+      patch: {
+        tags: ['Payments'],
+        summary: 'Buyer refunds escrow back to own wallet',
+        description: 'Only the buyer can refund a FUNDED or DISPUTED escrow payment. Completed escrow payments cannot be refunded.',
+        parameters: [{ $ref: '#/components/parameters/EscrowId' }],
+        responses: {
+          '200': { description: 'Escrow refunded', content: { 'application/json': { schema: { $ref: '#/components/schemas/EscrowPaymentResponse' } } } },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
         },
       },
     },
@@ -220,10 +292,12 @@ export const openApiSpec: Record<string, unknown> = {
         tags: ['Webhooks'],
         security: [],
         summary: 'Squad webhook callback',
-        description: 'Requires Squad HMAC-SHA512 signature headers as verified by middleware.',
-        requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', additionalProperties: true } } } },
+        description: 'Requires x-squad-signature. Swagger cannot calculate this signature automatically; use Postman or Squad/ngrok for signed webhook tests.',
+        parameters: [{ $ref: '#/components/parameters/SquadSignature' }],
+        requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/SquadWebhookRequest' } } } },
         responses: {
           '200': { description: 'Webhook accepted', content: { 'application/json': { schema: { type: 'object', additionalProperties: true } } } },
+          '401': { $ref: '#/components/responses/Error' },
         },
       },
     },
@@ -338,9 +412,11 @@ export const openApiSpec: Record<string, unknown> = {
       post: {
         tags: ['Buyer Requests'],
         summary: 'Analyse a typed request or optional image and match traders',
+        description: 'Only BUYER users can create buyer requests.',
         requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/BuyerRequestInput' } } } },
         responses: {
           '201': { description: 'Buyer request analysed and matched', content: { 'application/json': { schema: { $ref: '#/components/schemas/ApiResponse' } } } },
+          '403': { $ref: '#/components/responses/Error' },
         },
       },
     },
@@ -348,16 +424,20 @@ export const openApiSpec: Record<string, unknown> = {
       get: {
         tags: ['Buyer Requests'],
         summary: 'List my buyer requests',
+        description: 'Only BUYER users can list their buyer requests.',
         responses: {
           '200': { description: 'Buyer requests retrieved', content: { 'application/json': { schema: { $ref: '#/components/schemas/ApiResponse' } } } },
+          '403': { $ref: '#/components/responses/Error' },
         },
       },
       post: {
         tags: ['Buyer Requests'],
         summary: 'Create buyer request alias',
+        description: 'Only BUYER users can create buyer requests.',
         requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/BuyerRequestInput' } } } },
         responses: {
           '201': { description: 'Buyer request analysed and matched', content: { 'application/json': { schema: { $ref: '#/components/schemas/ApiResponse' } } } },
+          '403': { $ref: '#/components/responses/Error' },
         },
       },
     },
@@ -477,6 +557,15 @@ export const openApiSpec: Record<string, unknown> = {
         },
       },
     },
+    '/export/financial-report.pdf': {
+      get: {
+        tags: ['Export'],
+        summary: 'Download financial identity PDF report with .pdf extension',
+        responses: {
+          '200': { description: 'PDF file', content: { 'application/pdf': { schema: { type: 'string', format: 'binary' } } } },
+        },
+      },
+    },
   },
   components: {
     securitySchemes: {
@@ -492,7 +581,15 @@ export const openApiSpec: Record<string, unknown> = {
       UserId: { name: 'userId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
       OpportunityId: { name: 'opportunityId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
       ApplicationId: { name: 'applicationId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+      EscrowId: { name: 'escrowId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
       TransactionRef: { name: 'transactionRef', in: 'path', required: true, schema: { type: 'string' } },
+      SquadSignature: {
+        name: 'x-squad-signature',
+        in: 'header',
+        required: true,
+        schema: { type: 'string' },
+        description: 'HMAC-SHA512 signature generated with SQUAD_WEBHOOK_SECRET.',
+      },
     },
     responses: {
       Error: {
@@ -664,6 +761,109 @@ export const openApiSpec: Record<string, unknown> = {
       },
       WalletResponse: {
         allOf: [{ $ref: '#/components/schemas/ApiResponse' }],
+        example: {
+          success: true,
+          message: 'Wallet retrieved',
+          data: {
+            account: {
+              id: 'uuid',
+              accountNumber: '900000003',
+              accountName: 'Fatima Musa',
+              bankName: 'Sabi Demo Bank',
+              balance: '150000.00',
+            },
+            balances: {
+              available: 150000,
+              escrowHeld: 35000,
+              pendingEarnings: 0,
+            },
+          },
+        },
+      },
+      CreateEscrowRequest: {
+        type: 'object',
+        required: ['traderId', 'amount'],
+        properties: {
+          traderId: { type: 'string', format: 'uuid', description: 'Trader user ID from auth login or users list.' },
+          amount: { type: 'number', minimum: 1, example: 20000 },
+          description: { type: 'string', minLength: 2, maxLength: 255, example: 'Payment for rice supply' },
+          metadata: { type: 'object', additionalProperties: true, example: { source: 'swagger-test' } },
+        },
+      },
+      EscrowPayment: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          reference: { type: 'string', example: 'ESCROW_abcd1234efgh5678' },
+          buyerId: { type: 'string', format: 'uuid' },
+          traderId: { type: 'string', format: 'uuid' },
+          amount: { type: 'number', example: 20000 },
+          status: { type: 'string', enum: ['FUNDED', 'IN_PROGRESS', 'COMPLETED', 'DISPUTED', 'REFUNDED', 'CANCELLED'] },
+          description: { type: 'string', nullable: true },
+          metadata: { type: 'object', nullable: true, additionalProperties: true },
+          fundedAt: { type: 'string', format: 'date-time' },
+          releasedAt: { type: 'string', format: 'date-time', nullable: true },
+          refundedAt: { type: 'string', format: 'date-time', nullable: true },
+        },
+      },
+      EscrowPaymentResponse: {
+        allOf: [{ $ref: '#/components/schemas/ApiResponse' }],
+        example: {
+          success: true,
+          message: 'Escrow payment funded successfully',
+          data: {
+            id: 'uuid',
+            reference: 'ESCROW_abcd1234efgh5678',
+            buyerId: 'buyer-uuid',
+            traderId: 'trader-uuid',
+            amount: '20000.00',
+            status: 'FUNDED',
+            description: 'Payment for rice supply',
+          },
+        },
+      },
+      EscrowPaymentListResponse: {
+        allOf: [{ $ref: '#/components/schemas/ApiResponse' }],
+        example: {
+          success: true,
+          message: 'Escrow payments retrieved',
+          data: [
+            {
+              id: 'uuid',
+              reference: 'ESCROW_DEMO_FUNDED_RICE',
+              amount: '20000.00',
+              status: 'FUNDED',
+              buyer: { fullName: 'Fatima Musa' },
+              trader: { fullName: 'Amina Bello' },
+            },
+          ],
+        },
+      },
+      SquadWebhookRequest: {
+        type: 'object',
+        required: [
+          'transaction_reference',
+          'virtual_account_number',
+          'principal_amount',
+          'settled_amount',
+          'customer_identifier',
+          'transaction_indicator',
+          'currency',
+        ],
+        properties: {
+          transaction_reference: { type: 'string', example: 'SWAGGER_FUND_TEST_001' },
+          virtual_account_number: { type: 'string', example: '900000003' },
+          principal_amount: { type: 'string', example: '50000' },
+          settled_amount: { type: 'string', example: '50000' },
+          fee_charged: { type: 'string', example: '0' },
+          transaction_date: { type: 'string', format: 'date-time', example: '2026-05-13T12:00:00.000Z' },
+          customer_identifier: { type: 'string', example: 'SABI_buyer-user-id' },
+          transaction_indicator: { type: 'string', enum: ['C', 'D'], example: 'C' },
+          remarks: { type: 'string', example: 'Swagger wallet funding test' },
+          currency: { type: 'string', example: 'NGN' },
+          channel: { type: 'string', example: 'bank_transfer' },
+          sender_name: { type: 'string', example: 'Swagger Test Sender' },
+        },
       },
       ApplyToGigRequest: {
         type: 'object',

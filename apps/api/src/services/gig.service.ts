@@ -327,7 +327,7 @@ export const gigService = {
       amount: Math.round(Number(gig.budget) * 100),
       customerName: 'Gig Payment',
       customerEmail: posterEmail,
-      callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/gigs/payment/callback`,
+      callbackUrl: `${env.CLIENT_BASE_URL}/gigs/payment/callback`,
     });
 
     await application.update({
