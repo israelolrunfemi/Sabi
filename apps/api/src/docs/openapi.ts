@@ -11,6 +11,10 @@ export const openApiSpec: Record<string, unknown> = {
       url: 'http://localhost:5000/api/v1',
       description: 'Local development',
     },
+    {
+      url: 'https://sabi-api.onrender.com/api/v1',
+      description: 'Production',
+    },
   ],
   tags: [
     { name: 'Health' },

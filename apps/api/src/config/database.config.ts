@@ -2,8 +2,20 @@ import { Sequelize } from 'sequelize';
 import { env } from './env.config';
 import { logger } from './logger.config';
 
+const shouldUseSsl = (): boolean => {
+  return env.NODE_ENV === 'production' || env.DATABASE_URL.includes('.render.com');
+};
+
 export const sequelize = new Sequelize(env.DATABASE_URL,{
   dialect: 'postgres',
+  dialectOptions: shouldUseSsl()
+    ? {
+        ssl: {
+          require: true,
+          rejectUnauthorized: false,
+        },
+      }
+    : undefined,
 
   logging: env.isDev ? (sql) => logger.debug(sql) : false,
   pool: {
