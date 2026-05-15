@@ -101,7 +101,7 @@ const SignupPage = () => {
 
       setStoredToken("accessToken", authData.accessToken)
       setStoredToken("refreshToken", authData.refreshToken)
-      router.push("/")
+      router.push("/onboard")
     } catch (error) {
       const apiError = error as ApiError
       setErrorMessage(apiError.message ?? "Unable to create account. Please try again.")
