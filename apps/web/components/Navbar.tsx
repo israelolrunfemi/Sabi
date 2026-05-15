@@ -1,143 +1,99 @@
-"use client";
+'use client';
 
-import { type VariantProps } from "class-variance-authority";
-import { Menu } from "lucide-react";
-import { ReactNode } from "react";
+import Link from 'next/link';
+import { useState } from 'react';
+import { Menu, X } from 'lucide-react';
 
-import { siteConfig } from "@/config/site";
-import { cn } from "@/lib/utils";
+const Navbar = () => {
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-import LaunchUI from "@/components/logos/launch-ui";
-import { Button, buttonVariants } from "@/components/ui/button";
-import {
-  Navbar as NavbarComponent,
-  NavbarLeft,
-  NavbarRight,
-} from "@/components/ui/navbar";
-import Navigation from "@/components/ui/navigation";
-import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+  const navLinks = [
+    { label: 'Features', href: '#features' },
+    { label: 'Pricing', href: '#pricing' },
+    { label: 'FAQ', href: '#faq' },
+  ];
 
-interface NavbarLink {
-  text: string;
-  href: string;
-}
-
-interface NavbarActionProps {
-  text: string;
-  href: string;
-  variant?: VariantProps<typeof buttonVariants>["variant"];
-  icon?: ReactNode;
-  iconRight?: ReactNode;
-  isButton?: boolean;
-}
-
-interface NavbarProps {
-  logo?: ReactNode;
-  name?: string;
-  homeUrl?: string;
-  mobileLinks?: NavbarLink[];
-  actions?: NavbarActionProps[];
-  showNavigation?: boolean;
-  customNavigation?: ReactNode;
-  className?: string;
-}
-
-export default function Navbar({
-  logo = 'Sabi',
-  name = "Sabi",
-  homeUrl = siteConfig.url,
-  mobileLinks = [
-    { text: "Getting Started", href: siteConfig.url },
-    { text: "Components", href: siteConfig.url },
-    { text: "Documentation", href: siteConfig.url },
-  ],
-  actions = [
-    { text: "Sign in", href: siteConfig.url, isButton: false },
-    {
-      text: "Get Started",
-      href: siteConfig.url,
-      isButton: true,
-      variant: "default",
-    },
-  ],
-  showNavigation = true,
-  customNavigation,
-  className,
-}: NavbarProps) {
   return (
-    <header className={cn("sticky top-0 z-50 -mb-4 px-4 pb-4", className)}>
-      <div className="fade-bottom bg-background/15 absolute left-0 h-24 w-full backdrop-blur-lg"></div>
-      <div className="max-w-container relative mx-auto">
-        <NavbarComponent>
-          <NavbarLeft>
+    <nav className="sticky top-0 z-50 border-b border-slate-700 bg-slate-950/80 backdrop-blur-md px-4 py-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl flex items-center justify-between">
+        {/* Logo */}
+        <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+          Sabi
+        </Link>
+
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex items-center gap-8">
+          {navLinks.map((link) => (
             <a
-              href={homeUrl}
-              className="flex items-center gap-2 text-xl font-bold"
+              key={link.href}
+              href={link.href}
+              className="text-sm font-medium text-slate-300 hover:text-blue-400 transition-colors"
             >
-              {logo}
-              {name}
+              {link.label}
             </a>
-            {showNavigation && (customNavigation || <Navigation />)}
-          </NavbarLeft>
-          <NavbarRight>
-            {actions.map((action) =>
-              action.isButton ? (
-                <Button
-                  key={`${action.href}-${action.text}`}
-                  variant={action.variant || "default"}
-                  asChild
-                >
-                  <a href={action.href}>
-                    {action.icon}
-                    {action.text}
-                    {action.iconRight}
-                  </a>
-                </Button>
-              ) : (
-                <a
-                  key={`${action.href}-${action.text}`}
-                  href={action.href}
-                  className="hidden text-sm md:block"
-                >
-                  {action.text}
-                </a>
-              ),
-            )}
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="shrink-0 md:hidden"
-                >
-                  <Menu className="size-5" />
-                  <span className="sr-only">Toggle navigation menu</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right">
-                <SheetTitle className="sr-only">Navigation menu</SheetTitle>
-                <nav className="grid gap-6 text-lg font-medium">
-                  <a
-                    href={homeUrl}
-                    className="flex items-center gap-2 text-xl font-bold"
-                  >
-                    <span>{name}</span>
-                  </a>
-                  {mobileLinks.map((link) => (
-                    <a
-                      key={`${link.href}-${link.text}`}
-                      href={link.href}
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      {link.text}
-                    </a>
-                  ))}
-                </nav>
-              </SheetContent>
-            </Sheet>
-          </NavbarRight>
-        </NavbarComponent>
+          ))}
+        </div>
+
+        {/* Desktop CTA */}
+        <div className="hidden md:flex items-center gap-4">
+          <Link
+            href="/auth/login"
+            className="text-sm font-medium text-slate-300 hover:text-blue-400 transition-colors"
+          >
+            Login
+          </Link>
+          <Link
+            href="/auth/register"
+            className="rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-2 text-sm font-semibold text-white hover:from-blue-700 hover:to-blue-800 transition-all"
+          >
+            Sign Up
+          </Link>
+        </div>
+
+        {/* Mobile Menu Button */}
+        <button
+          className="md:hidden p-2"
+          onClick={() => setMobileOpen(!mobileOpen)}
+        >
+          {mobileOpen ? (
+            <X className="h-6 w-6 text-white" />
+          ) : (
+            <Menu className="h-6 w-6 text-white" />
+          )}
+        </button>
       </div>
-    </header>
+
+      {/* Mobile Navigation */}
+      {mobileOpen && (
+        <div className="md:hidden border-t border-slate-700 mt-4 pt-4 space-y-4">
+          {navLinks.map((link) => (
+            <a
+              key={link.href}
+              href={link.href}
+              className="block text-sm font-medium text-slate-300 hover:text-blue-400 transition-colors"
+              onClick={() => setMobileOpen(false)}
+            >
+              {link.label}
+            </a>
+          ))}
+          <div className="flex flex-col gap-3 pt-4 border-t border-slate-700">
+            <Link
+              href="/auth/login"
+              className="text-sm font-medium text-slate-300 hover:text-blue-400 transition-colors"
+            >
+              Login
+            </Link>
+            <Link
+              href="/auth/register"
+              className="rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2 text-sm font-semibold text-white hover:from-blue-700 hover:to-blue-800 transition-all text-center"
+            >
+              Sign Up
+            </Link>
+          </div>
+        </div>
+      )}
+    </nav>
   );
-}
+};
+
+export default Navbar;
