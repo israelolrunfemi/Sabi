@@ -21,7 +21,7 @@ const HOP_BY_HOP_HEADERS = new Set([
 
 function buildBackendUrl(request: Request) {
   const incomingUrl = new URL(request.url);
-  const backendUrl = new URL(BACKEND_API_URL);
+  const backendUrl = new URL(BACKEND_API_URL as string);
   const incomingPath = incomingUrl.pathname.replace(/^\/api\/?/, "");
   const basePath = backendUrl.pathname.replace(/\/$/, "");
   const nextPath = incomingPath ? `${basePath}/${incomingPath}` : basePath || "/";
